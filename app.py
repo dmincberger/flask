@@ -40,6 +40,7 @@ class Users(db.Model, UserMixin):
 
 class Folders(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    parentFolder = db.Column(db.String(1000))
     folderName = db.Column(db.String(50), unique=True)
     type = db.Column(db.String(20))
     icon = db.Column(db.String(20))
@@ -47,6 +48,7 @@ class Folders(db.Model):
 
 class Files(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    parentFolder = db.Column(db.String(1000))
     fileName = db.Column(db.String(50), unique=True)
     type = db.Column(db.String(20))
     icon = db.Column(db.String(20))
@@ -83,6 +85,10 @@ class rename_folder(FlaskForm):
     """formularz zmiany nazwy"""
     new_name = StringField('nowa_nazwa', validators=[DataRequired()], render_kw={'placeholder': 'Nowa_nazwa'})
     submit = SubmitField('Zmien nazwe')
+
+class delete_folder(FlaskForm):
+    submit = SubmitField('Zmien nazwe')
+
 class Add(FlaskForm):
     """formularz dodawania użytkowników"""
     firstName = StringField('Imię', validators=[DataRequired()], render_kw={'placeholder': 'Imię'})
@@ -194,7 +200,8 @@ def dashboard():
     createFolder = CreateFolders()
     uploadFile = UploadFiles()
     renameFolder = rename_folder()
-    return render_template('dashboard.html', title='Dashboard', users=users, addUser=addUser, editUser=editUser, editUserPass=editUserPass, search=search, createFolder=createFolder, uploadFile=uploadFile, renameFolder=renameFolder, folders=folders, files=files)
+    deleteFolder = delete_folder()
+    return render_template('dashboard.html', title='Dashboard', users=users, addUser=addUser, editUser=editUser, editUserPass=editUserPass, search=search, createFolder=createFolder, uploadFile=uploadFile, renameFolder=renameFolder, deleteFolder=deleteFolder,folders=folders, files=files)
 
 @app.route('/add-user', methods=['POST', 'GET'])
 @login_required
@@ -269,7 +276,7 @@ def createFolder():
     if folderName != '':
         os.mkdir(os.path.join(app.config['UPLOAD_PATH'], folderName))
         time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        newFolder = Folders(folderName=folderName, type='folder', icon='bi bi-folder', time=time)
+        newFolder = Folders(folderName=folderName, type='folder', icon='bi bi-folder', time=time, parentFolder=app.config['UPLOAD_PATH'])
         db.session.add(newFolder)
         db.session.commit()
         flash('Folder utworzony poprawnie', 'success')
@@ -295,9 +302,13 @@ def renameFolder(old_name):
 
     return redirect(url_for('dashboard'))
 
-@app.route('/delete-folder', methods=['GET', 'POST'])
+@app.route('/remove-folder<string:folder_name>', methods=['GET', 'POST'])
 @login_required
-def deleteFolder():
+def removeFolder(folder_name):
+    Folders.query.filter_by(folderName=folder_name).delete()
+    db.session.commit()
+    current_path = os.getcwd()
+    os.rmdir(os.path.join(current_path,app.config['UPLOAD_PATH'], folder_name))
     return redirect(url_for('dashboard'))
 
 @app.route('/upload-file', methods=('GET', 'POST'))
@@ -326,7 +337,7 @@ def uploadFile():
         uploadedFile.save(os.path.join(app.config['UPLOAD_PATH'], fileName))
         size = round(os.stat(os.path.join(app.config['UPLOAD_PATH'], fileName)).st_size / (1024 * 1024), 2)
         time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        newFile = Files(fileName=fileName, type=type, icon=icon, time=time, size=size)
+        newFile = Files(fileName=fileName, type=type, icon=icon, time=time, size=size,parentFolder=app.config['UPLOAD_PATH'])
         db.session.add(newFile)
         db.session.commit()
         flash('Plik przesłany poprawnie', 'success')
@@ -335,6 +346,7 @@ def uploadFile():
 @app.route('/rename-file', methods=('GET', ''))
 @login_required
 def renameFile():
+
     return redirect(url_for('dashboard'))
 
 @app.route('/delete-file', methods=('GET', ''))

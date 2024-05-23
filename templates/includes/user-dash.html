@@ -30,32 +30,7 @@
             </thead>
             <tbody>
                 {% for folder in folders %}
-
-
-                    <tr>
-                        <td><i class="{{ folder.icon }} me-2"></i>{{ folder.folderName }}</td>
-                        <td>{{ folder.time }}</td>
-                        <td></td>
-                        <td class="text-end">
-                            <i class="bi bi-trash3 text-danger"></i>
-                            <i class="bi bi-pencil-square"data-bs-toggle="modal" data-bs-target="#renameFolder"></i>
-                        </td>
-                    </tr>
-                {% endfor %}
-                {% for file in files %}
-                    <tr>
-                        <td>{{ file.fileName }}</td>
-                        <td>{{ file.time }}</td>
-                        <td>{{ file.size }} MB</td>
-                        <td class="text-end"><i class="bi bi-three-dots-vertical text-secondary"></i></td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-    <div class="modal fade" id="renameFolder" tabindex="-1" aria-labelledby="renameFolderLabel" aria-hidden="true">
+                        <div class="modal fade" id="renameFolder" tabindex="-1" aria-labelledby="renameFolderLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -76,3 +51,50 @@
             </div>
         </div>
     </div>
+                       <div class="modal fade" id="deleteFolder" tabindex="-1" aria-labelledby="deleteFolderLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <p class="modal-title" id="deleteFolderlabel">
+                        <i class="bi bi-cloud-arrow-up pe-2 fs-5"></i>Usuwanie folderu
+                    </p>
+                </div>
+                <form method="post" action="{{ url_for('removeFolder', folder_name=folder.folderName) }}" enctype="multipart/form-data">
+    <div class="alert-info">
+        <h1>CZY JESTES PEWIEN CZY CHCESZ USUNAC FOLDER</h1>
+    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        {{ deleteFolder.submit(class="btn btn-sm btn-outline-secondary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+                    <tr>
+                        <td><i class="{{ folder.icon }} me-2"></i>{{ folder.folderName }}</td>
+                        <td>{{ folder.time }}</td>
+                        <td></td>
+                        <td class="text-end">
+                            <i class="bi bi-trash3 text-danger"data-bs-toggle="modal" data-bs-target="#deleteFolder"></i>
+                            <i class="bi bi-pencil-square"data-bs-toggle="modal" data-bs-target="#renameFolder"></i>
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% for file in files %}
+                    <tr>
+                        <td>{{ file.fileName }}</td>
+                        <td>{{ file.time }}</td>
+                        <td>{{ file.size }} MB</td>
+                        <td class="text-end"><i class="bi bi-three-dots-vertical text-secondary"></i></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+
