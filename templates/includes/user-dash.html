@@ -1,0 +1,78 @@
+<div class="row">
+    <div class="col-lg-6">
+        <form method="post" action="#">
+            <div class="input-group">
+                {{ search.hidden_tag() }}
+                {{ search.searchKey(class="form-control rounded-start-2") }}
+                {{ search.submit(class="btn btn-outline-secondary border-secondary-subtle") }}
+            </div>
+        </form>
+    </div>
+    <div class="col-lg-6">
+        <div class="btn-toolbar" role="toolbar">
+            <div class="btn-group" role="group">
+                <button role="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#createFolder"><i class="bi bi-folder-plus"></i></button>
+                <button role="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#uploadFile"><i class="bi bi-cloud-arrow-up"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mt-3">
+    <div class="col-lg-12">
+        <table class="table table-sm align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Nazwa</th>
+                    <th>Data modyfikacji</th>
+                    <th>Rozmiar</th>
+                    <th class="text-end">Edycja</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for folder in folders %}
+
+
+                    <tr>
+                        <td><i class="{{ folder.icon }} me-2"></i>{{ folder.folderName }}</td>
+                        <td>{{ folder.time }}</td>
+                        <td></td>
+                        <td class="text-end">
+                            <i class="bi bi-trash3 text-danger"></i>
+                            <i class="bi bi-pencil-square"data-bs-toggle="modal" data-bs-target="#renameFolder"></i>
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% for file in files %}
+                    <tr>
+                        <td>{{ file.fileName }}</td>
+                        <td>{{ file.time }}</td>
+                        <td>{{ file.size }} MB</td>
+                        <td class="text-end"><i class="bi bi-three-dots-vertical text-secondary"></i></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+    <div class="modal fade" id="renameFolder" tabindex="-1" aria-labelledby="renameFolderLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <p class="modal-title" id="renameFolderlabel">
+                        <i class="bi bi-cloud-arrow-up pe-2 fs-5"></i>Zmiana nazwy folderu
+                    </p>
+                </div>
+                <form method="post" action="{{ url_for('renameFolder', old_name=folder.folderName) }}" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        {{ renameFolder.hidden_tag() }}
+                        {{ renameFolder.new_name(class="form-control") }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        {{ renameFolder.submit(class="btn btn-sm btn-outline-secondary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
