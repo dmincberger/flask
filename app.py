@@ -40,7 +40,7 @@ class Users(db.Model, UserMixin):
 
 class Folders(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    parentFolder = db.Column(db.String(1000))
+    parent_folder = db.Column(db.String(1000))
     folderName = db.Column(db.String(50), unique=True)
     type = db.Column(db.String(20))
     icon = db.Column(db.String(20))
@@ -48,7 +48,7 @@ class Folders(db.Model):
 
 class Files(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    parentFolder = db.Column(db.String(1000))
+    parent_folder = db.Column(db.String(1000))
     fileName = db.Column(db.String(50), unique=True)
     type = db.Column(db.String(20))
     icon = db.Column(db.String(20))
@@ -86,8 +86,15 @@ class rename_folder(FlaskForm):
     new_name = StringField('nowa_nazwa', validators=[DataRequired()], render_kw={'placeholder': 'Nowa_nazwa'})
     submit = SubmitField('Zmien nazwe')
 
-class delete_folder(FlaskForm):
+class rename_file(FlaskForm):
+    new_name = StringField('nowa_nazwa', validators=[DataRequired()], render_kw={'placeholder': 'Nowa_nazwa'})
     submit = SubmitField('Zmien nazwe')
+
+class delete_folder(FlaskForm):
+    submit = SubmitField('USUN')
+
+class delete_file(FlaskForm):
+    submit = SubmitField('USUN')
 
 class Add(FlaskForm):
     """formularz dodawania użytkowników"""
@@ -191,8 +198,8 @@ def register():
 @login_required
 def dashboard():
     users = Users.query.all()
-    folders = Folders.query.all()
-    files = Files.query.all()
+    folders = Folders.query.filter_by(parent_folder=app.config['UPLOAD_PATH'])
+    files = Files.query.filter_by(parent_folder=app.config['UPLOAD_PATH'])
     addUser = Add()
     editUser = Edit()
     editUserPass = ChangePass()
@@ -201,7 +208,9 @@ def dashboard():
     uploadFile = UploadFiles()
     renameFolder = rename_folder()
     deleteFolder = delete_folder()
-    return render_template('dashboard.html', title='Dashboard', users=users, addUser=addUser, editUser=editUser, editUserPass=editUserPass, search=search, createFolder=createFolder, uploadFile=uploadFile, renameFolder=renameFolder, deleteFolder=deleteFolder,folders=folders, files=files)
+    deleteFile = delete_file()
+    renameFile = rename_file()
+    return render_template('dashboard.html', title='Dashboard', users=users, addUser=addUser, editUser=editUser, editUserPass=editUserPass, search=search, createFolder=createFolder, uploadFile=uploadFile, renameFolder=renameFolder, deleteFolder=deleteFolder,folders=folders, files=files, deleteFile=deleteFile,renameFile=renameFile)
 
 @app.route('/add-user', methods=['POST', 'GET'])
 @login_required
@@ -276,7 +285,7 @@ def createFolder():
     if folderName != '':
         os.mkdir(os.path.join(app.config['UPLOAD_PATH'], folderName))
         time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        newFolder = Folders(folderName=folderName, type='folder', icon='bi bi-folder', time=time, parentFolder=app.config['UPLOAD_PATH'])
+        newFolder = Folders(folderName=folderName, type='folder', icon='bi bi-folder', time=time, parent_folder=app.config['UPLOAD_PATH'])
         db.session.add(newFolder)
         db.session.commit()
         flash('Folder utworzony poprawnie', 'success')
@@ -298,6 +307,27 @@ def renameFolder(old_name):
     renamed_folder = Folders.query.filter_by(folderName=old_name).first()
     renamed_folder.folderName = new_folder_name
     os.rename(os.path.join(current_path,app.config['UPLOAD_PATH'], old_name), os.path.join(current_path,app.config['UPLOAD_PATH'], new_folder_name))
+    db.session.commit()
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/rename-file<string:old_name>', methods=['GET','POST'])
+@login_required
+def rename_file_function(old_name):
+    new_file_name = request.form['new_name']
+    current_path = os.getcwd()
+    if new_file_name == '':
+        flash('Prosze podac jakas nazwe pliku', 'danger')
+        return redirect(url_for('dashboard'))
+    if os.path.exists(os.path.join(app.config['UPLOAD_PATH'], new_file_name)):
+        print(old_name)
+        print(new_file_name)
+        flash('ten folder juz istnieje', 'danger')
+        return redirect(url_for('dashboard'))
+    renamed_file = Files.query.filter_by(fileName=old_name).first()
+    renamed_file.fileName = new_file_name
+    os.rename(os.path.join(current_path, app.config['UPLOAD_PATH'], old_name),
+              os.path.join(current_path, app.config['UPLOAD_PATH'], new_file_name))
     db.session.commit()
 
     return redirect(url_for('dashboard'))
@@ -337,23 +367,40 @@ def uploadFile():
         uploadedFile.save(os.path.join(app.config['UPLOAD_PATH'], fileName))
         size = round(os.stat(os.path.join(app.config['UPLOAD_PATH'], fileName)).st_size / (1024 * 1024), 2)
         time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        newFile = Files(fileName=fileName, type=type, icon=icon, time=time, size=size,parentFolder=app.config['UPLOAD_PATH'])
+        newFile = Files(fileName=fileName, type=type, icon=icon, time=time, size=size,parent_folder=app.config['UPLOAD_PATH'])
         db.session.add(newFile)
         db.session.commit()
         flash('Plik przesłany poprawnie', 'success')
         return redirect(url_for('dashboard'))
 
-@app.route('/rename-file', methods=('GET', ''))
+@app.route('/delete-file<string:file_name>', methods=('GET', 'POST'))
 @login_required
-def renameFile():
-
+def remove_file(file_name):
+    print("HALO FILE-NAME:"+str(file_name))
+    Files.query.filter_by(fileName=file_name).delete()
+    db.session.commit()
+    current_path = os.getcwd()
+    os.remove(os.path.join(current_path,app.config['UPLOAD_PATH'], file_name))
     return redirect(url_for('dashboard'))
 
-@app.route('/delete-file', methods=('GET', ''))
+@app.route('/change-folder', methods=('GET','POST'))
 @login_required
-def deleteFile():
+def traverse_folder():
+    if request.method == 'GET':
+        name = request.args.get('name')
+        app.config['UPLOAD_PATH'] += "/"+name
+        return redirect(url_for('dashboard'))
+@app.route('/go-back', methods=('GET','POST'))
+@login_required
+def traverse_back():
+    if app.config['UPLOAD_PATH'] == "uploads":
+        return redirect(url_for('dashboard'))
+    upload_split = app.config['UPLOAD_PATH'].split("/")
+    del upload_split[-1]
+    seperator = "/"
+    new_path = seperator.join(upload_split)
+    app.config['UPLOAD_PATH'] = new_path
     return redirect(url_for('dashboard'))
-
 
 if __name__ == '__main__':
     with app.app_context():

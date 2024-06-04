@@ -22,6 +22,7 @@
         <table class="table table-sm align-middle">
             <thead class="table-light">
                 <tr>
+                    <th><a href="{{url_for('traverse_back')}}"><i class="bi bi-arrow-return-left"></i></a></th>
                     <th>Nazwa</th>
                     <th>Data modyfikacji</th>
                     <th>Rozmiar</th>
@@ -73,7 +74,7 @@
     </div>
 
                     <tr>
-                        <td><i class="{{ folder.icon }} me-2"></i>{{ folder.folderName }}</td>
+                        <td><i class="{{ folder.icon }} me-2"></i><a href="{{ url_for('traverse_folder', name=folder.folderName) }}">{{folder.folderName}}</a></td>
                         <td>{{ folder.time }}</td>
                         <td></td>
                         <td class="text-end">
@@ -83,11 +84,55 @@
                     </tr>
                 {% endfor %}
                 {% for file in files %}
+                <div class="modal fade" id="renameFile" tabindex="-1" aria-labelledby="renameFileLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <p class="modal-title" id="renameFilelabel">
+                        <i class="bi bi-cloud-arrow-up pe-2 fs-5"></i>Zmiana nazwy pliku
+                    </p>
+                </div>
+                <form method="post" action="{{ url_for('rename_file_function', old_name=file.fileName) }}" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        {{ renameFile.hidden_tag() }}
+                        {{ renameFile.new_name(class="form-control") }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        {{ renameFile.submit(class="btn btn-sm btn-outline-secondary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+                                       <div class="modal fade" id="deleteFile" tabindex="-1" aria-labelledby="deleteFolderLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <p class="modal-title" id="deleteFilelabel">
+                        <i class="bi bi-cloud-arrow-up pe-2 fs-5"></i>Usuwanie folderu
+                    </p>
+                </div>
+                <form method="post" action="{{ url_for('remove_file', file_name=file.fileName) }}" enctype="multipart/form-data">
+    <div class="alert-info">
+        <h1>CZY JESTES PEWIEN CZY CHCESZ USUNAC PLIK</h1>
+    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        {{ deleteFile.submit(class="btn btn-sm btn-outline-secondary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
                     <tr>
                         <td>{{ file.fileName }}</td>
                         <td>{{ file.time }}</td>
                         <td>{{ file.size }} MB</td>
-                        <td class="text-end"><i class="bi bi-three-dots-vertical text-secondary"></i></td>
+                                           <td class="text-end">
+                            <i class="bi bi-trash3 text-danger"data-bs-toggle="modal" data-bs-target="#deleteFile"></i>
+                            <i class="bi bi-pencil-square"data-bs-toggle="modal" data-bs-target="#renameFile"></i>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
